@@ -63,7 +63,8 @@ def list_to_midi(sample):
     tr = mido.MidiTrack()
     midi.tracks.append(tr)
     tr.append(MetaMessage("set_tempo", tempo=tempo, time=0))
-
+    if (control != None):
+        tr.append(Message("program_change", channel=0, program=control,time=0))
     pedal = pedal_max
     last_notes = []
 
@@ -150,14 +151,12 @@ def generate_sample(number, decoder, seed=None):
     return midi
 
 
-def generate(model, seed=None):
-    print()
-    print("Do you wanna add dudec?\n y/[n]")
-    c = input()
+def generate(model, seed=None,d=False):
+
     global dudets
-    dudets = False
-    if (c == 'y'):
-        dudets = True
+    dudets = d
+    global control
+    control = None
     with open(pwd + model + '_classes') as f:
         file = f.readlines()[0].split()
         global classes, tempo, time_range, velocity_range, pedal_max, class_notes, sos, hidden_size, use_pedal
