@@ -1,0 +1,6 @@
+#!/bin/bash
+echo Setup libraries:
+pip3 install mido
+pip3 install midi2audio
+echo To install fluidsynth
+sudo apt-get install fluidsynth
