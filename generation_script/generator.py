@@ -172,5 +172,7 @@ def generate(model, seed=None,d=False):
     velocity_range = checkpoint['velocity_range']
     time_range = checkpoint['time_range']
     tempo = checkpoint['tempo']
+    if (model == 'bethoven_v2'):
+        tempo = tempo * 2 // 3
     decoder.load_state_dict(checkpoint['model_state_dict'])
     return generate_sample(1, decoder, seed=seed)
