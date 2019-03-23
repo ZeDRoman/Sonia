@@ -9,3 +9,4 @@ You need generation_script folder
   2. ```./setup```
   3. ```python3 run.py```
   4. follow instructions
+  5. sample will be created in samples folder
