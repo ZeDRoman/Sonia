@@ -165,10 +165,8 @@ def generate(model, seed=None,d=False):
     sos = classes - 1
     use_pedal = True
     map_location = 'cpu'
-    if (torch.cuda.is_available()):
-        map_location = 'gpu'
     decoder = DecoderRNN(hidden_size, classes, [0, 0, 0, 0, 0]).to(device)
-    checkpoint = torch.load(pwd + model)
+    checkpoint = torch.load(pwd + model,map_location=map_location)
     class_notes = checkpoint['class_note']
     pedal_max = 20
     velocity_range = checkpoint['velocity_range']

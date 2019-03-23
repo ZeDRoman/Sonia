@@ -2,6 +2,8 @@
 /.ipynb_checkpoints/
 /generation_script/.idea/
 /generation_script/venv/
+/generation_script/__pycache__/
 /Labs/.ipynb_checkpoints/
 /Labs/Ierogliph/.ipynb_checkpoints/
 /.idea/
+/Model_v3/.ipynb_checkpoints/
