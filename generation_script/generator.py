@@ -7,7 +7,7 @@ import random
 import torch.nn as nn
 import torch.nn.functional as F
 from constants import pwd, save_pwd
-max_len = 100
+max_len = 1000
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class DecoderRNN(nn.Module):
@@ -50,7 +50,7 @@ def class_to_msg(n):
     n //= len(class_notes)
     t = time_range[n % 3]
     n //= 3
-    v = velocity_range[n]
+    v = min(127, velocity_range[n])
     if (note < 60):
         v = v * 2 // 3
     return Message("note_on", note=note, velocity=v, time=t)
@@ -63,8 +63,7 @@ def list_to_midi(sample):
     tr = mido.MidiTrack()
     midi.tracks.append(tr)
     tr.append(MetaMessage("set_tempo", tempo=tempo, time=0))
-    if (control != None):
-        tr.append(Message("program_change", channel=0, program=control,time=0))
+
     pedal = pedal_max
     last_notes = []
 
@@ -99,6 +98,8 @@ def evaluate(decoder, num=-1, max_length=max_len, seed=None):
             np.random.seed(seed)
         decoder_input = one_hot(sos)
         decoder_hidden = []
+        
+#    init hidden
         for j in range(3):
             decoder_hidden.append([random.random() * 10 for i in range(hidden_size)])
         decoder_hidden = [torch.tensor(decoder_hidden[0], device=device).view(1, 1, -1),
@@ -108,16 +109,16 @@ def evaluate(decoder, num=-1, max_length=max_len, seed=None):
         decoded_words = []
 
         for di in range(max_length):
-            # if (seed != None):
-            #     np.random.seed(seed + di)
             decoder_output, decoder_hidden = decoder(
                 decoder_input, decoder_hidden)
             topv, topi = decoder_output.data.topk(random.randint(3, 4))
             topv = np.exp(topv.cpu()[0].numpy())
-            topv[1] += 0.2
-            # topv = (-1)/topv.cpu()[0].numpy()
+#    increase chance of notes to create music more interesting
+            for i in range(len(topv)-1, 1, -1):
+                topv[i] += topv[i-1] / 5
             summ = topv.sum()
-            # print(topv / summ)
+            
+#    sampling
             chosen = np.random.choice(topi[0].cpu(), p=topv / summ)
             decoder_input = one_hot(chosen)
             decoded_words.append(chosen)
@@ -143,20 +144,25 @@ def create_dudec(length):
 
 def generate_sample(number, decoder, seed=None):
     for i in range(number):
-        new_music = evaluate(decoder, max_length=1000, seed=seed)
+        new_music = evaluate(decoder, seed=seed)
         midi = list_to_midi(new_music)
+
+#    adding dudets
         if (dudets):
             midi.tracks.append(create_dudec(midi.length))
+
+#    saveing midi
         midi.save(save_pwd + "sample" + ".mid")
     return midi
 
 
 def generate(model, seed=None,d=False):
 
+#   adding dudets  
     global dudets
     dudets = d
-    global control
-    control = None
+    
+#   loading model
     with open(pwd + model + '_classes') as f:
         file = f.readlines()[0].split()
         global classes, tempo, time_range, velocity_range, pedal_max, class_notes, sos, hidden_size, use_pedal
@@ -172,7 +178,6 @@ def generate(model, seed=None,d=False):
     velocity_range = checkpoint['velocity_range']
     time_range = checkpoint['time_range']
     tempo = checkpoint['tempo']
-    # if (model == 'bethoven_v2'):
-        # tempo = tempo * 2 // 3
     decoder.load_state_dict(checkpoint['model_state_dict'])
+ 
     return generate_sample(1, decoder, seed=seed)
